@@ -1,0 +1,64 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ReviewWidget from '../../components/ReviewWidget.astro';
+import { getCategory } from '../../data/categories';
+import { aggregateReviews, dbConfigured } from '../../lib/reviews';
+
+const { slug } = Astro.params;
+const category = getCategory(slug!);
+if (!category) return Astro.redirect('/404');
+
+const aggregate = dbConfigured() ? await aggregateReviews(category.slug) : { count: 0, average: null };
+
+const title = `${category.name}ランキングサイト比較 | sosolu.site`;
+const description = `${category.name}の作品ランキングサイトを、実際のユーザーレビューをもとに比較します。${category.description}`;
+
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'sosolu.site', item: 'https://sosolu.site/' },
+    { '@type': 'ListItem', position: 2, name: category.name, item: `https://sosolu.site/c/${category.slug}/` },
+  ],
+};
+
+const itemLd: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: `${category.name}ランキングサイト`,
+  description: category.description,
+};
+if (aggregate.count > 0 && aggregate.average != null) {
+  itemLd.aggregateRating = {
+    '@type': 'AggregateRating',
+    ratingValue: aggregate.average.toFixed(1),
+    reviewCount: aggregate.count,
+  };
+}
+---
+<Layout title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(itemLd)} />
+
+  <nav aria-label="breadcrumb"><a href="/">sosolu.site</a> &gt; {category.name}</nav>
+
+  <main>
+    <h1>{category.name}ランキングサイト比較</h1>
+    <p>{category.description}</p>
+
+    <section aria-labelledby="site-heading">
+      <h2 id="site-heading">ランキングサイトを見る</h2>
+      {category.externalUrl ? (
+        <p><a href={category.externalUrl} rel="nofollow sponsored noopener" target="_blank">{category.name}ランキングを見る →</a></p>
+      ) : (
+        <p>このジャンルのランキングサイトは準備中です。公開され次第、ここにリンクを掲載します。</p>
+      )}
+    </section>
+
+    <section aria-labelledby="reviews-heading">
+      <h2 id="reviews-heading">ユーザーレビュー</h2>
+      <p>実際にランキングサイトを使った方の評価・感想です。使いやすさや情報の正確さの参考にしてください。</p>
+      <ReviewWidget targetSlug={category.slug} />
+    </section>
+  </main>
+</Layout>

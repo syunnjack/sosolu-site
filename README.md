@@ -1,9 +1,10 @@
-﻿# sosolu-site
+# sosolu-site
 
-sosolu.site — ユーザーレビュー（UGC）を核にした比較・ランキングサイト。
-既存の41ランキングサイトとの差別化として、UGCとAIO/LLMO最適化を組み込む。
+sosolu.site — 既存の41ジャンル別ランキングサイト（`syunnjack/*-ranking`）を横断して比較する、
+ユーザーレビュー（UGC）主体のメタ比較ハブ。
 
-設計方針: `rakuten02` リポジトリの `docs/SOSOLU-PROJECT-PLAN.md` を参照。
+設計方針: [docs/DOMAINS.md](./docs/DOMAINS.md)（ドメイン割り当て）。
+`rakuten02` リポジトリの `docs/SEO-AIO-LLMO.md` / `docs/RANKING-SITES.md` も参照。
 
 ## セットアップ
 
@@ -16,13 +17,21 @@ npm run dev
 
 Vercelに接続すると `@astrojs/vercel` アダプタでそのままデプロイ可能。
 
-## 現状（スキャフォールドのみ）
+`src/pages/api/reviews.ts` はVercel Postgresに接続する。`POSTGRES_URL` 等の環境変数が未設定の場合、
+レビューAPIは503を返し、フロント側は「準備中」表示にフォールバックする（サイト自体は落ちない）。
 
-- [x] Astroプロジェクト初期構成
+DB接続後は `db/schema.sql` を実行してテーブルを作成すること。
+
+## 現状
+
+- [x] Astroプロジェクト初期構成（sitemap統合済み）
 - [x] `llms.txt` / `robots.txt`（AIO/LLMO・SEO基礎）
-- [x] FAQ構造化データ（JSON-LD）のひな形
-- [x] UGCレビューAPIエンドポイントの配置（`src/pages/api/reviews.ts`、未実装）
-- [ ] ランキングコンテンツ
-- [ ] UGCレビュー投稿・表示UI
-- [ ] DB接続（レビュー永続化）
-- [ ] Vercelデプロイ + sosolu.jp DNS設定
+- [x] 41ジャンルの一覧ページ（`/`）+ ジャンル別ページ（`/c/{slug}/`）
+- [x] FAQ / BreadcrumbList / Product+AggregateRating 構造化データ（JSON-LD）
+- [x] UGCレビュー投稿・表示UI（`src/components/ReviewWidget.astro`）
+- [x] レビューAPI実装（`src/pages/api/reviews.ts`、バリデーション込み）
+- [x] DBスキーマ定義（`db/schema.sql`）
+- [ ] 各ジャンルランキングサイトの実デプロイ・URL紐付け（`src/data/categories.ts` の `externalUrl`、現状すべて未公開のため `null`）
+- [ ] Vercel Postgresの実プロビジョニング（ユーザー側のVercelアカウント作業）
+- [ ] `sosolu.site` のVercelカスタムドメイン設定
+- [ ] 残り19ドメインのリダイレクト設定（[docs/DOMAINS.md](./docs/DOMAINS.md)）

@@ -1,14 +1,23 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
+import { categories, groups } from '../data/categories';
 
 const faqs = [
   {
     q: 'sosolu.site とは何ですか？',
-    a: 'ユーザーのレビュー・評価をもとにした比較情報サイトです。ランキングはユーザー投稿データを反映して更新されます。',
+    a: 'アダルト作品ジャンルごとに存在する複数のランキングサイトを、実際の利用者レビューをもとに比較できるメタ比較ハブです。',
+  },
+  {
+    q: 'ランキングは誰が作っていますか？',
+    a: '各ジャンルのランキング自体はジャンル別サイトが作成しています。sosolu.siteはそれらのサイトを横断して比較し、実際に使ったユーザーのレビュー・評価を集約します。',
+  },
+  {
+    q: 'レビューは誰でも投稿できますか？',
+    a: 'はい。ニックネームで匿名投稿でき、評価（1〜5）とコメントを投稿できます。',
   },
 ];
 
-const jsonLd = {
+const faqLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: faqs.map((f) => ({
@@ -17,23 +26,44 @@ const jsonLd = {
     acceptedAnswer: { '@type': 'Answer', text: f.a },
   })),
 };
+
+const itemListLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  itemListElement: categories.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: c.name,
+    url: `https://sosolu.site/c/${c.slug}/`,
+  })),
+};
 ---
-<Layout title="sosolu.site" description="ユーザーレビューをもとにした比較・ランキングサイト">
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+<Layout
+  title="sosolu.site — ジャンル別ランキングサイト比較ハブ"
+  description="ジャンルごとのアダルト作品ランキングサイトを、実際のユーザーレビューをもとに比較できるメタ比較サイトです。"
+>
+  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
 
   <main>
     <h1>sosolu.site</h1>
-    <p>ユーザーレビューをもとにした比較・ランキングサイト（スキャフォールド。コンテンツは今後追加）</p>
+    <p>
+      ジャンル別に分かれた作品ランキングサイトを、実際に使ったユーザーのレビューをもとに比較できるメタ比較ハブです。
+      どのランキングサイトが自分の探しているジャンルに強いか、レビューを参考に選べます。
+    </p>
 
-    <section aria-labelledby="ranking-heading">
-      <h2 id="ranking-heading">ランキング</h2>
-      <p>TODO: ランキング一覧をここに実装</p>
-    </section>
-
-    <section aria-labelledby="reviews-heading">
-      <h2 id="reviews-heading">ユーザーレビュー（UGC）</h2>
-      <p>TODO: レビュー投稿・表示UIをここに実装（<code>src/pages/api/reviews.ts</code> と連携）</p>
-    </section>
+    {groups.map((group) => (
+      <section aria-labelledby={`group-${group}`}>
+        <h2 id={`group-${group}`}>{group}</h2>
+        <ul class="category-grid">
+          {categories.filter((c) => c.group === group).map((c) => (
+            <li>
+              <a href={`/c/${c.slug}/`}>{c.name}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
 
     <section aria-labelledby="faq-heading">
       <h2 id="faq-heading">よくある質問</h2>
@@ -46,3 +76,22 @@ const jsonLd = {
     </section>
   </main>
 </Layout>
+
+<style>
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+  }
+  .category-grid li {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  .category-grid a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    text-decoration: none;
+  }
+</style>

@@ -1,0 +1,157 @@
+---
+export interface Props {
+  targetSlug: string;
+}
+const { targetSlug } = Astro.props;
+---
+<div class="review-widget" data-target={targetSlug}>
+  <div class="review-summary" data-role="summary" aria-live="polite">読み込み中...</div>
+
+  <ul class="review-list" data-role="list"></ul>
+
+  <form class="review-form" data-role="form">
+    <label>
+      評価
+      <select name="rating" required>
+        <option value="5">★★★★★（5）</option>
+        <option value="4">★★★★☆（4）</option>
+        <option value="3" selected>★★★☆☆（3）</option>
+        <option value="2">★★☆☆☆（2）</option>
+        <option value="1">★☆☆☆☆（1）</option>
+      </select>
+    </label>
+    <label>
+      お名前（ニックネーム可）
+      <input type="text" name="author_name" maxlength="40" required />
+    </label>
+    <label>
+      レビュー内容
+      <textarea name="comment" maxlength="1000" required></textarea>
+    </label>
+    <button type="submit">投稿する</button>
+    <p class="review-form-status" data-role="status" role="status"></p>
+  </form>
+</div>
+
+<script define:vars={{ targetSlug }}>
+  const root = document.currentScript.closest('.review-widget');
+  const summaryEl = root.querySelector('[data-role="summary"]');
+  const listEl = root.querySelector('[data-role="list"]');
+  const formEl = root.querySelector('[data-role="form"]');
+  const statusEl = root.querySelector('[data-role="status"]');
+
+  function renderSummary(aggregate) {
+    if (!aggregate || aggregate.count === 0) {
+      summaryEl.textContent = 'まだレビューがありません。最初のレビューを投稿してください。';
+      return;
+    }
+    summaryEl.textContent = `平均評価 ${aggregate.average.toFixed(1)} / 5（${aggregate.count}件のレビュー）`;
+  }
+
+  function renderList(reviews) {
+    listEl.innerHTML = '';
+    for (const review of reviews) {
+      const li = document.createElement('li');
+      li.className = 'review-item';
+      const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+      const date = new Date(review.created_at).toLocaleDateString('ja-JP');
+      li.innerHTML = `
+        <div class="review-item-header">
+          <span class="review-item-stars">${stars}</span>
+          <span class="review-item-author"></span>
+          <span class="review-item-date">${date}</span>
+        </div>
+        <p class="review-item-comment"></p>
+      `;
+      li.querySelector('.review-item-author').textContent = review.author_name;
+      li.querySelector('.review-item-comment').textContent = review.comment;
+      listEl.appendChild(li);
+    }
+  }
+
+  async function load() {
+    try {
+      const res = await fetch(`/api/reviews?target=${encodeURIComponent(targetSlug)}`);
+      if (res.status === 503) {
+        summaryEl.textContent = 'レビュー機能は準備中です。';
+        formEl.style.display = 'none';
+        return;
+      }
+      if (!res.ok) throw new Error('failed to load reviews');
+      const data = await res.json();
+      renderSummary(data.aggregate);
+      renderList(data.reviews);
+    } catch {
+      summaryEl.textContent = 'レビューの読み込みに失敗しました。';
+    }
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusEl.textContent = '';
+    const formData = new FormData(formEl);
+    const payload = {
+      target_slug: targetSlug,
+      rating: Number(formData.get('rating')),
+      author_name: String(formData.get('author_name') || ''),
+      comment: String(formData.get('comment') || ''),
+    };
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        statusEl.textContent = err.error ? `投稿に失敗しました（${err.error}）` : '投稿に失敗しました。';
+        return;
+      }
+      formEl.reset();
+      statusEl.textContent = '投稿しました。ありがとうございます！';
+      load();
+    } catch {
+      statusEl.textContent = '投稿に失敗しました。通信環境をご確認ください。';
+    }
+  });
+
+  load();
+</script>
+
+<style>
+  .review-widget {
+    display: grid;
+    gap: 1rem;
+    margin-block: 1rem;
+  }
+  .review-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .review-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+  .review-item-header {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .review-item-stars {
+    color: #e8a33d;
+  }
+  .review-form {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 32rem;
+  }
+  .review-form label {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+  }
+</style>
