@@ -1,0 +1,48 @@
+﻿---
+import Layout from '../layouts/Layout.astro';
+
+const faqs = [
+  {
+    q: 'sosolu.site とは何ですか？',
+    a: 'ユーザーのレビュー・評価をもとにした比較情報サイトです。ランキングはユーザー投稿データを反映して更新されます。',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+---
+<Layout title="sosolu.site" description="ユーザーレビューをもとにした比較・ランキングサイト">
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <main>
+    <h1>sosolu.site</h1>
+    <p>ユーザーレビューをもとにした比較・ランキングサイト（スキャフォールド。コンテンツは今後追加）</p>
+
+    <section aria-labelledby="ranking-heading">
+      <h2 id="ranking-heading">ランキング</h2>
+      <p>TODO: ランキング一覧をここに実装</p>
+    </section>
+
+    <section aria-labelledby="reviews-heading">
+      <h2 id="reviews-heading">ユーザーレビュー（UGC）</h2>
+      <p>TODO: レビュー投稿・表示UIをここに実装（<code>src/pages/api/reviews.ts</code> と連携）</p>
+    </section>
+
+    <section aria-labelledby="faq-heading">
+      <h2 id="faq-heading">よくある質問</h2>
+      {faqs.map((f) => (
+        <details>
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </section>
+  </main>
+</Layout>
