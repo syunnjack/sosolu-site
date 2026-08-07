@@ -4,12 +4,12 @@ import { categories, groups } from '../data/categories';
 
 const faqs = [
   {
-    q: 'sosolu.site とは何ですか？',
+    q: 'sosolu.tokyo とは何ですか？',
     a: 'アダルト作品ジャンルごとに存在する複数のランキングサイトを、実際の利用者レビューをもとに比較できるメタ比較ハブです。',
   },
   {
     q: 'ランキングは誰が作っていますか？',
-    a: '各ジャンルのランキング自体はジャンル別サイトが作成しています。sosolu.siteはそれらのサイトを横断して比較し、実際に使ったユーザーのレビュー・評価を集約します。',
+    a: '各ジャンルのランキング自体はジャンル別サイトが作成しています。sosolu.tokyoはそれらのサイトを横断して比較し、実際に使ったユーザーのレビュー・評価を集約します。',
   },
   {
     q: 'レビューは誰でも投稿できますか？',
@@ -34,19 +34,19 @@ const itemListLd = {
     '@type': 'ListItem',
     position: i + 1,
     name: c.name,
-    url: `https://sosolu.site/c/${c.slug}/`,
+    url: `https://sosolu.tokyo/c/${c.slug}/`,
   })),
 };
 ---
 <Layout
-  title="sosolu.site — ジャンル別ランキングサイト比較ハブ"
+  title="sosolu.tokyo — ジャンル別ランキングサイト比較ハブ"
   description="ジャンルごとのアダルト作品ランキングサイトを、実際のユーザーレビューをもとに比較できるメタ比較サイトです。"
 >
   <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
   <script type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
 
   <main>
-    <h1>sosolu.site</h1>
+    <h1>sosolu.tokyo</h1>
     <p>
       ジャンル別に分かれた作品ランキングサイトを、実際に使ったユーザーのレビューをもとに比較できるメタ比較ハブです。
       どのランキングサイトが自分の探しているジャンルに強いか、レビューを参考に選べます。

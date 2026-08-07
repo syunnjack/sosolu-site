@@ -1,6 +1,6 @@
 # sosolu-site
 
-sosolu.site — 既存の41ジャンル別ランキングサイト（`syunnjack/*-ranking`）を横断して比較する、
+sosolu.tokyo — 既存の41ジャンル別ランキングサイト（`syunnjack/*-ranking`）を横断して比較する、
 ユーザーレビュー（UGC）主体のメタ比較ハブ。
 
 設計方針: [docs/DOMAINS.md](./docs/DOMAINS.md)（ドメイン割り当て）。
@@ -33,5 +33,5 @@ DB接続後は `db/schema.sql` を実行してテーブルを作成すること�
 - [x] DBスキーマ定義（`db/schema.sql`）
 - [ ] 各ジャンルランキングサイトの実デプロイ・URL紐付け（`src/data/categories.ts` の `externalUrl`、現状すべて未公開のため `null`）
 - [ ] Vercel Postgresの実プロビジョニング（ユーザー側のVercelアカウント作業）
-- [ ] `sosolu.site` のVercelカスタムドメイン設定
+- [ ] `sosolu.tokyo` のVercelカスタムドメイン設定
 - [ ] 残り19ドメインのリダイレクト設定（[docs/DOMAINS.md](./docs/DOMAINS.md)）
