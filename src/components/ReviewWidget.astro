@@ -5,153 +5,285 @@ export interface Props {
 const { targetSlug } = Astro.props;
 ---
 <div class="review-widget" data-target={targetSlug}>
-  <div class="review-summary" data-role="summary" aria-live="polite">読み込み中...</div>
+  <p class="review-summary" data-role="summary" aria-live="polite">レビューを読み込んでいます…</p>
 
   <ul class="review-list" data-role="list"></ul>
 
-  <form class="review-form" data-role="form">
+  <form class="review-form" data-role="form" novalidate>
+    <h3>レビューを投稿する</h3>
+
     <label>
-      評価
+      <span>評価</span>
       <select name="rating" required>
-        <option value="5">★★★★★（5）</option>
-        <option value="4">★★★★☆（4）</option>
-        <option value="3" selected>★★★☆☆（3）</option>
-        <option value="2">★★☆☆☆（2）</option>
-        <option value="1">★☆☆☆☆（1）</option>
+        <option value="5">★★★★★（5 とても良い）</option>
+        <option value="4">★★★★☆（4 良い）</option>
+        <option value="3" selected>★★★☆☆（3 ふつう）</option>
+        <option value="2">★★☆☆☆（2 いまひとつ）</option>
+        <option value="1">★☆☆☆☆（1 良くない）</option>
       </select>
     </label>
+
     <label>
-      お名前（ニックネーム可）
-      <input type="text" name="author_name" maxlength="40" required />
+      <span>お名前（ニックネーム可）</span>
+      <input type="text" name="author_name" maxlength="40" required autocomplete="nickname" />
     </label>
+
     <label>
-      レビュー内容
-      <textarea name="comment" maxlength="1000" required></textarea>
+      <span>レビュー内容</span>
+      <textarea name="comment" maxlength="1000" minlength="10" rows="5" required></textarea>
+      <small class="review-form-hint">
+        10〜1000文字。URLは投稿できません。<a href="/guidelines/">レビュー掲載方針</a>をご確認ください。
+      </small>
     </label>
-    <button type="submit">投稿する</button>
+
+    {/*
+      ハニーポット。人には見えず、自動投稿だけが埋めていく。
+      サーバ側（/api/reviews）で中身があれば黙って捨てる。
+    */}
+    <div class="review-honeypot" aria-hidden="true">
+      <label>
+        ウェブサイト
+        <input type="text" name="website" tabindex="-1" autocomplete="off" />
+      </label>
+    </div>
+
+    <div>
+      <button type="submit" class="button" data-role="submit">投稿する</button>
+    </div>
     <p class="review-form-status" data-role="status" role="status"></p>
   </form>
 </div>
 
-<script define:vars={{ targetSlug }}>
-  const root = document.currentScript.closest('.review-widget');
-  const summaryEl = root.querySelector('[data-role="summary"]');
-  const listEl = root.querySelector('[data-role="list"]');
-  const formEl = root.querySelector('[data-role="form"]');
-  const statusEl = root.querySelector('[data-role="status"]');
+<script is:inline define:vars={{ targetSlug }}>
+  (function () {
+    // data-target で引く。このスクリプトはウィジェットのdivの「外」
+    // （閉じタグの直後）に出力されるため、document.currentScript から
+    // closest('.review-widget') では辿れず null になる。
+    var root = document.querySelector('.review-widget[data-target="' + targetSlug + '"]');
+    if (!root) return;
 
-  function renderSummary(aggregate) {
-    if (!aggregate || aggregate.count === 0) {
-      summaryEl.textContent = 'まだレビューがありません。最初のレビューを投稿してください。';
-      return;
+    var summaryEl = root.querySelector('[data-role="summary"]');
+    var listEl = root.querySelector('[data-role="list"]');
+    var formEl = root.querySelector('[data-role="form"]');
+    var statusEl = root.querySelector('[data-role="status"]');
+    var submitEl = root.querySelector('[data-role="submit"]');
+
+    function stars(rating) {
+      return '★'.repeat(rating) + '☆'.repeat(5 - rating);
     }
-    summaryEl.textContent = `平均評価 ${aggregate.average.toFixed(1)} / 5（${aggregate.count}件のレビュー）`;
-  }
 
-  function renderList(reviews) {
-    listEl.innerHTML = '';
-    for (const review of reviews) {
-      const li = document.createElement('li');
-      li.className = 'review-item';
-      const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
-      const date = new Date(review.created_at).toLocaleDateString('ja-JP');
-      li.innerHTML = `
-        <div class="review-item-header">
-          <span class="review-item-stars">${stars}</span>
-          <span class="review-item-author"></span>
-          <span class="review-item-date">${date}</span>
-        </div>
-        <p class="review-item-comment"></p>
-      `;
-      li.querySelector('.review-item-author').textContent = review.author_name;
-      li.querySelector('.review-item-comment').textContent = review.comment;
-      listEl.appendChild(li);
-    }
-  }
-
-  async function load() {
-    try {
-      const res = await fetch(`/api/reviews?target=${encodeURIComponent(targetSlug)}`);
-      if (res.status === 503) {
-        summaryEl.textContent = 'レビュー機能は準備中です。';
-        formEl.style.display = 'none';
+    function renderSummary(aggregate) {
+      if (!aggregate || aggregate.count === 0) {
+        summaryEl.textContent = 'まだレビューがありません。最初のレビューを投稿してみませんか。';
         return;
       }
-      if (!res.ok) throw new Error('failed to load reviews');
-      const data = await res.json();
-      renderSummary(data.aggregate);
-      renderList(data.reviews);
-    } catch {
-      summaryEl.textContent = 'レビューの読み込みに失敗しました。';
+      summaryEl.textContent =
+        '平均評価 ' + aggregate.average.toFixed(1) + ' / 5（' + aggregate.count + '件のレビュー）';
     }
-  }
 
-  formEl.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    statusEl.textContent = '';
-    const formData = new FormData(formEl);
-    const payload = {
-      target_slug: targetSlug,
-      rating: Number(formData.get('rating')),
-      author_name: String(formData.get('author_name') || ''),
-      comment: String(formData.get('comment') || ''),
-    };
-    try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        statusEl.textContent = err.error ? `投稿に失敗しました（${err.error}）` : '投稿に失敗しました。';
-        return;
+    function renderList(reviews) {
+      listEl.replaceChildren();
+      for (var i = 0; i < reviews.length; i++) {
+        var review = reviews[i];
+        var li = document.createElement('li');
+        li.className = 'review-item';
+
+        var header = document.createElement('div');
+        header.className = 'review-item-header';
+
+        var starEl = document.createElement('span');
+        starEl.className = 'review-item-stars';
+        starEl.textContent = stars(review.rating);
+        // 記号の羅列は読み上げに向かないので、読み上げ用の文言を別に持たせる。
+        starEl.setAttribute('aria-label', '5段階中' + review.rating);
+
+        var authorEl = document.createElement('span');
+        authorEl.className = 'review-item-author';
+        authorEl.textContent = review.author_name;
+
+        var timeEl = document.createElement('time');
+        timeEl.className = 'review-item-date';
+        timeEl.dateTime = review.created_at;
+        timeEl.textContent = new Date(review.created_at).toLocaleDateString('ja-JP');
+
+        header.append(starEl, authorEl, timeEl);
+
+        var commentEl = document.createElement('p');
+        commentEl.className = 'review-item-comment';
+        // textContent なので投稿本文のHTMLは実行されない。
+        commentEl.textContent = review.comment;
+
+        li.append(header, commentEl);
+        listEl.appendChild(li);
       }
-      formEl.reset();
-      statusEl.textContent = '投稿しました。ありがとうございます！';
-      load();
-    } catch {
-      statusEl.textContent = '投稿に失敗しました。通信環境をご確認ください。';
     }
-  });
 
-  load();
+    async function load() {
+      try {
+        var res = await fetch('/api/reviews?target=' + encodeURIComponent(targetSlug));
+        if (res.status === 503) {
+          summaryEl.textContent = 'レビュー機能は準備中です。';
+          formEl.hidden = true;
+          return;
+        }
+        if (!res.ok) throw new Error('failed to load reviews');
+        var data = await res.json();
+        renderSummary(data.aggregate);
+        renderList(data.reviews);
+      } catch (e) {
+        summaryEl.textContent = 'レビューの読み込みに失敗しました。時間をおいて再読み込みしてください。';
+      }
+    }
+
+    formEl.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      statusEl.textContent = '';
+      statusEl.classList.remove('is-error');
+
+      var formData = new FormData(formEl);
+      var payload = {
+        target_slug: targetSlug,
+        rating: Number(formData.get('rating')),
+        author_name: String(formData.get('author_name') || ''),
+        comment: String(formData.get('comment') || ''),
+        website: String(formData.get('website') || ''),
+      };
+
+      // 二重送信を防ぐ。通信が遅いときに何度も押されがちなので。
+      submitEl.disabled = true;
+      submitEl.textContent = '送信中…';
+
+      try {
+        var res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          var err = await res.json().catch(function () {
+            return {};
+          });
+          statusEl.textContent = err.error ? err.error : '投稿に失敗しました。';
+          statusEl.classList.add('is-error');
+          return;
+        }
+        formEl.reset();
+        statusEl.textContent = '投稿しました。ありがとうございます！';
+        load();
+      } catch (e) {
+        statusEl.textContent = '投稿に失敗しました。通信環境をご確認ください。';
+        statusEl.classList.add('is-error');
+      } finally {
+        submitEl.disabled = false;
+        submitEl.textContent = '投稿する';
+      }
+    });
+
+    load();
+  })();
 </script>
 
 <style>
   .review-widget {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
     margin-block: 1rem;
+  }
+  .review-summary {
+    margin: 0;
+    font-weight: 600;
   }
   .review-list {
     list-style: none;
     padding: 0;
+    margin: 0;
     display: grid;
     gap: 0.75rem;
   }
   .review-item {
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
     padding: 0.75rem 1rem;
   }
   .review-item-header {
     display: flex;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: #555;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: baseline;
+    font-size: 0.85rem;
+    color: var(--text-muted);
   }
   .review-item-stars {
-    color: #e8a33d;
+    color: var(--star);
+    letter-spacing: 0.05em;
   }
+  .review-item-author {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .review-item-comment {
+    margin: 0.4rem 0 0;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .review-form {
     display: grid;
-    gap: 0.5rem;
-    max-width: 32rem;
+    gap: 0.85rem;
+    max-width: 34rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+    padding: 1rem 1.15rem 1.25rem;
+  }
+  .review-form h3 {
+    margin: 0;
+    font-size: 1rem;
   }
   .review-form label {
     display: grid;
-    gap: 0.25rem;
-    font-size: 0.9rem;
+    gap: 0.3rem;
+    font-size: 0.88rem;
+  }
+  .review-form label > span {
+    font-weight: 600;
+  }
+  .review-form input,
+  .review-form select,
+  .review-form textarea {
+    font: inherit;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    color: var(--text);
+    width: 100%;
+  }
+  .review-form textarea {
+    resize: vertical;
+  }
+  .review-form-hint {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  /* ハニーポット。display:none だと埋めないボットがいるので画面外に逃がす。 */
+  .review-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .review-form-status {
+    margin: 0;
+    font-size: 0.88rem;
+    min-height: 1.4em;
+  }
+  .review-form-status.is-error {
+    color: var(--accent);
   }
 </style>

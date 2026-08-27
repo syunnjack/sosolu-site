@@ -1,64 +1,119 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ReviewWidget from '../../components/ReviewWidget.astro';
-import { getCategory } from '../../data/categories';
+import { getCategory, getRelatedCategories } from '../../data/categories';
 import { aggregateReviews, dbConfigured } from '../../lib/reviews';
+import { SITE_NAME, absoluteUrl } from '../../lib/site';
 
 const { slug } = Astro.params;
 const category = getCategory(slug!);
-if (!category) return Astro.redirect('/404');
 
-const aggregate = dbConfigured() ? await aggregateReviews(category.slug) : { count: 0, average: null };
+// 存在しないジャンルは /404 へ飛ばすのではなく、その場で404を返す。
+// リダイレクトだと 301/302 が返り、検索エンジンには「存在するURL」に見えてしまう。
+if (!category) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
 
-const title = `${category.name}ランキングサイト比較 | sosolu.tokyo`;
+const aggregate = dbConfigured()
+  ? await aggregateReviews(category.slug)
+  : { count: 0, average: null };
+
+const related = getRelatedCategories(category.slug);
+
+const title = `${category.name}ランキングサイト比較 | ${SITE_NAME}`;
 const description = `${category.name}の作品ランキングサイトを、実際のユーザーレビューをもとに比較します。${category.description}`;
+const pageUrl = absoluteUrl(`/c/${category.slug}/`);
 
 const breadcrumbLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'sosolu.tokyo', item: 'https://sosolu.tokyo/' },
-    { '@type': 'ListItem', position: 2, name: category.name, item: `https://sosolu.tokyo/c/${category.slug}/` },
+    { '@type': 'ListItem', position: 1, name: SITE_NAME, item: absoluteUrl('/') },
+    { '@type': 'ListItem', position: 2, name: category.group, item: absoluteUrl('/') },
+    { '@type': 'ListItem', position: 3, name: category.name, item: pageUrl },
   ],
 };
 
-const itemLd: Record<string, unknown> = {
+// 比較対象は「作品」ではなくランキングサイトなので Product ではなく WebPage +
+// ItemList で表す。AggregateRating はレビューが実在するときだけ付ける
+// （0件で付けると構造化データのポリシー違反になる）。
+const pageLd: Record<string, unknown> = {
   '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: `${category.name}ランキングサイト`,
+  '@type': 'WebPage',
+  name: `${category.name}ランキングサイト比較`,
+  url: pageUrl,
   description: category.description,
+  inLanguage: 'ja',
+  isFamilyFriendly: false,
 };
 if (aggregate.count > 0 && aggregate.average != null) {
-  itemLd.aggregateRating = {
-    '@type': 'AggregateRating',
-    ratingValue: aggregate.average.toFixed(1),
-    reviewCount: aggregate.count,
+  pageLd.mainEntity = {
+    '@type': 'Thing',
+    name: `${category.name}ランキングサイト`,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: aggregate.average.toFixed(1),
+      reviewCount: aggregate.count,
+      bestRating: 5,
+      worstRating: 1,
+    },
   };
 }
 ---
-<Layout title={title} description={description}>
+<Layout title={title} description={description} canonical={pageUrl}>
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
-  <script type="application/ld+json" set:html={JSON.stringify(itemLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(pageLd)} />
 
-  <nav aria-label="breadcrumb"><a href="/">sosolu.tokyo</a> &gt; {category.name}</nav>
+  <nav slot="breadcrumb" class="wrap breadcrumb" aria-label="パンくず">
+    <ol>
+      <li><a href="/">{SITE_NAME}</a></li>
+      <li>{category.group}</li>
+      <li aria-current="page">{category.name}</li>
+    </ol>
+  </nav>
 
-  <main>
-    <h1>{category.name}ランキングサイト比較</h1>
-    <p>{category.description}</p>
+  <h1>{category.name}ランキングサイト比較</h1>
+  <p class="lead">{category.description}</p>
 
-    <section aria-labelledby="site-heading">
-      <h2 id="site-heading">ランキングサイトを見る</h2>
-      {category.externalUrl ? (
-        <p><a href={category.externalUrl} rel="nofollow sponsored noopener" target="_blank">{category.name}ランキングを見る →</a></p>
-      ) : (
-        <p>このジャンルのランキングサイトは準備中です。公開され次第、ここにリンクを掲載します。</p>
-      )}
+  <section aria-labelledby="site-heading">
+    <h2 id="site-heading">ランキングサイトを見る</h2>
+    {category.externalUrl ? (
+      <>
+      <p>
+        <a class="button" href={category.externalUrl} rel="nofollow sponsored noopener" target="_blank">
+          {category.name}ランキングを見る
+        </a>
+      </p>
+      <p class="notice">
+        リンク先は外部サイトです。当サイトはアフィリエイトプログラムを利用しており、
+        このリンク経由の利用で紹介料が発生する場合があります。
+      </p>
+      </>
+    ) : (
+      <p class="notice">
+        このジャンルのランキングサイトは準備中です。公開され次第、ここにリンクを掲載します。
+        先にレビューを投稿しておくこともできます。
+      </p>
+    )}
+  </section>
+
+  <section aria-labelledby="reviews-heading">
+    <h2 id="reviews-heading">ユーザーレビュー</h2>
+    <p>
+      実際にランキングサイトを使った方の評価・感想です。使いやすさや情報の正確さの参考にしてください。
+      投稿前に<a href="/guidelines/">レビュー掲載方針</a>をご確認ください。
+    </p>
+    <ReviewWidget targetSlug={category.slug} />
+  </section>
+
+  {related.length > 0 && (
+    <section aria-labelledby="related-heading">
+      <h2 id="related-heading">「{category.group}」の他のジャンル</h2>
+      <ul class="related">
+        {related.map((c) => (
+          <li><a href={`/c/${c.slug}/`}>{c.name}</a></li>
+        ))}
+      </ul>
     </section>
-
-    <section aria-labelledby="reviews-heading">
-      <h2 id="reviews-heading">ユーザーレビュー</h2>
-      <p>実際にランキングサイトを使った方の評価・感想です。使いやすさや情報の正確さの参考にしてください。</p>
-      <ReviewWidget targetSlug={category.slug} />
-    </section>
-  </main>
+  )}
 </Layout>

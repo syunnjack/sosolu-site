@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { categories, groups } from '../data/categories';
+import { SITE_NAME } from '../lib/site';
+
+// 全ジャンルを出すと長いので、グループごとの先頭だけ入口として並べる。
+const picks = groups
+  .map((group) => categories.find((c) => c.group === group))
+  .filter((c): c is NonNullable<typeof c> => Boolean(c));
+---
+<Layout
+  title={`ページが見つかりません | ${SITE_NAME}`}
+  description="お探しのページは見つかりませんでした。ジャンル一覧からお探しください。"
+  noindex
+>
+  <h1>ページが見つかりません</h1>
+  <p class="lead">
+    お探しのページは移動または削除された可能性があります。
+    お手数ですが、ジャンル一覧からお探しください。
+  </p>
+
+  <p><a class="button" href="/">ジャンル一覧へ</a></p>
+
+  <section aria-labelledby="picks-heading">
+    <h2 id="picks-heading">グループから探す</h2>
+    <ul class="related">
+      {picks.map((c) => (
+        <li><a href={`/c/${c.slug}/`}>{c.group}</a></li>
+      ))}
+    </ul>
+  </section>
+</Layout>

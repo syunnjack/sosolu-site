@@ -1,0 +1,117 @@
+---
+import { AGE_CONSENT_KEY } from '../lib/site';
+---
+{/*
+  R18サイトなので年齢確認を挟む。
+
+  クローラを弾かないよう、本文はサーバ側で普通に描画したうえで
+  確認前だけ上に重ねて隠す。JSが無い環境では重ねない（＝そのまま読める）ので、
+  法的な同意取得というより「意図せず開いた人向けの入口」として置いている。
+*/}
+<div id="age-gate" class="age-gate" hidden>
+  <div class="age-gate-panel" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+    <p class="age-gate-badge">R18</p>
+    <h2 id="age-gate-title">年齢確認</h2>
+    <p>
+      このサイトはアダルト作品のランキングサイトを比較する、成人向けの情報サイトです。
+      18歳未満の方および所在地域で成人と認められない方はご利用いただけません。
+    </p>
+    <div class="age-gate-actions">
+      <button type="button" class="button" data-age-accept>18歳以上です（入場する）</button>
+      <a class="button button-secondary" href="https://www.google.co.jp/" rel="noopener">18歳未満の方（退出する）</a>
+    </div>
+    <p class="age-gate-note">
+      「入場する」を選ぶと、この確認はこのブラウザに記録され次回から表示されません。
+    </p>
+  </div>
+</div>
+
+<script is:inline define:vars={{ storageKey: AGE_CONSENT_KEY }}>
+  (function () {
+    var gate = document.getElementById('age-gate');
+    if (!gate) return;
+
+    var accepted = false;
+    try {
+      accepted = localStorage.getItem(storageKey) === '1';
+    } catch (e) {
+      // プライベートウィンドウ等で localStorage が触れないことがある。
+      // その場合は毎回確認を出す（読めないだけで動作は壊さない）。
+      accepted = false;
+    }
+
+    if (accepted) return;
+
+    // JSが動く環境でだけ重ねる。ここまで来て初めて hidden を外す。
+    gate.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+
+    gate.querySelector('[data-age-accept]').addEventListener('click', function () {
+      try {
+        localStorage.setItem(storageKey, '1');
+      } catch (e) {
+        // 保存できなくても入場自体は通す。
+      }
+      gate.hidden = true;
+      document.documentElement.style.overflow = '';
+    });
+  })();
+</script>
+
+<style>
+  .age-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(10 10 12 / 92%);
+    overflow-y: auto;
+  }
+  .age-gate[hidden] {
+    display: none;
+  }
+  .age-gate-panel {
+    width: 100%;
+    max-width: 28rem;
+    background: var(--bg-raised);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .age-gate-badge {
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .age-gate-panel h2 {
+    margin: 0 0 0.75rem;
+    border: 0;
+    padding: 0;
+    font-size: 1.15rem;
+  }
+  .age-gate-panel p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-align: start;
+  }
+  .age-gate-actions {
+    display: grid;
+    gap: 0.5rem;
+    margin-block: 1.25rem 0.75rem;
+  }
+  .age-gate-note {
+    font-size: 0.78rem;
+    margin-bottom: 0;
+  }
+</style>
