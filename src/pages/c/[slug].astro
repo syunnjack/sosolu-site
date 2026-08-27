@@ -61,8 +61,8 @@ if (aggregate.count > 0 && aggregate.average != null) {
 }
 ---
 <Layout title={title} description={description} canonical={pageUrl}>
-  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
-  <script type="application/ld+json" set:html={JSON.stringify(pageLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(pageLd)} />
 
   <nav slot="breadcrumb" class="wrap breadcrumb" aria-label="パンくず">
     <ol>

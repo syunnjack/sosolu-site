@@ -20,7 +20,7 @@ const aboutLd = {
   title={`運営者情報・当サイトについて | ${SITE_NAME}`}
   description={`${SITE_NAME} がどのようなサイトか、掲載しているランキングとレビューをどう扱っているかを説明します。`}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(aboutLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(aboutLd)} />
 
   <nav slot="breadcrumb" class="wrap breadcrumb" aria-label="パンくず">
     <ol>

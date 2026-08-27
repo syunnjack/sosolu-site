@@ -13,6 +13,17 @@ npm install
 npm run dev
 ```
 
+## チェック
+
+```bash
+npm run check   # astro check（型・テンプレートの診断）
+npm run build   # 本番ビルド
+```
+
+PRとmainへのpushでは `.github/workflows/ci.yml` がこの2つを走らせる。
+Vercelのプレビューでもビルドは走るが、失敗に気付くのがデプロイ後になるため、
+マージ前にPR上でも確認する。
+
 ## デプロイ
 
 Vercelに接続すると `@astrojs/vercel` アダプタでそのままデプロイ可能。
@@ -45,6 +56,7 @@ DB接続後は `db/schema.sql` を実行してテーブルを作成すること�
 ## 現状
 
 - [x] Astroプロジェクト初期構成
+- [x] CI（型チェック + ビルド）
 - [x] `llms.txt` / `robots.txt`（AIO/LLMO・SEO基礎）
 - [x] 42ジャンルの一覧ページ（`/`）+ ジャンル別ページ（`/c/{slug}/`）
 - [x] 全URLを含む動的サイトマップ（`/sitemap.xml`）

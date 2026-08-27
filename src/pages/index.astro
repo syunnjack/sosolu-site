@@ -66,9 +66,9 @@ const groupId = (index: number) => `group-${index}`;
   title={`${SITE_NAME} — ${categories.length}ジャンルのランキングサイトをレビューで比較`}
   description={SITE_DESCRIPTION}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(siteLd)} />
-  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
-  <script type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(siteLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(faqLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
 
   <h1>ジャンル別ランキングサイトを、レビューで比較する</h1>
   <p class="lead">
