@@ -32,6 +32,34 @@
 
 ### 2. 残り18ドメインを追加する
 
+#### 一括で追加する（推奨）
+
+19件を手で追加すると途中で飛ばしても気付きにくいので、
+GitHub Actions から一括登録できるようにしてある。
+
+1. Settings → Secrets and variables → Actions に登録する
+   （**トークンはここに入れる。チャットに貼らないこと**）
+   - `VERCEL_TOKEN` … https://vercel.com/account/tokens で発行
+   - `VERCEL_PROJECT_ID` … プロジェクトの Settings → General
+   - `VERCEL_TEAM_ID` … 個人アカウントなら不要
+2. Actions → **Add domains to Vercel** → Run workflow
+   - まず `apply` を **false** のまま実行する。何も変更せず、
+     これから追加する分だけ出る
+   - 内容を確認したら `apply` を **true** にして再実行する
+3. 追加済みのドメインは飛ばすので、途中で失敗しても再実行してよい
+
+登録対象は `src/lib/site.ts` を読むため、コードと設定はずれない。
+`sosolu.site` が混ざっていた場合はAPIを1回も呼ばずに中止する。
+
+手元から直接動かすこともできる:
+
+```bash
+VERCEL_TOKEN=... VERCEL_PROJECT_ID=... npm run vercel-domains          # 下見
+VERCEL_TOKEN=... VERCEL_PROJECT_ID=... npm run vercel-domains -- --apply
+```
+
+#### 手で追加する場合
+
 下記をVercelプロジェクトに追加し、それぞれDNSをVercelへ向ける。
 **追加するだけでよい。** Vercel側でリダイレクト設定をする必要はなく、
 `src/middleware.ts` が301で `sosolu.tokyo` へ寄せる。

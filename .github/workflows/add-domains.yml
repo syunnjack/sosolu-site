@@ -1,0 +1,45 @@
+# 保有ドメインをVercelプロジェクトに一括登録する。
+#
+# ダッシュボードで19件を手で追加するのは手数が多く、途中で飛ばしても
+# 気付きにくい。登録対象は src/lib/site.ts をそのまま読むので、
+# コードと設定がずれない。
+#
+# 手動実行のみ。既定は下見（dry run）で、apply を true にしたときだけ
+# 実際に追加する。
+#
+# 事前に Settings → Secrets and variables → Actions で登録しておくもの:
+#   VERCEL_TOKEN       … https://vercel.com/account/tokens で発行
+#   VERCEL_PROJECT_ID  … プロジェクトの Settings → General
+#   VERCEL_TEAM_ID     … 個人アカウントなら不要
+name: Add domains to Vercel
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '実際に追加する（false なら下見のみ）'
+        type: boolean
+        default: false
+
+jobs:
+  add-domains:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Add domains
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            node scripts/vercel-domains.mjs --apply
+          else
+            node scripts/vercel-domains.mjs
+          fi
