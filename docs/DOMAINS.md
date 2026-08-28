@@ -17,15 +17,86 @@
 - **残り18ドメインは全て `sosolu.tokyo` への301リダイレクトにする。** 複数ドメインにコンテンツを分散させると重複コンテンツ扱いされSEO評価が割れるため、防衛目的（表記ゆれ・タイポ・競合登録防止）に徹する。
 - 将来的に別ジャンル特化サイトとして独立させたい場合のみ、個別ドメインにコンテンツを持たせる（未確定・要判断）。
 
-## 実施手順（ユーザー側の作業が必要）
+## 実施手順（ダッシュボード操作が必要）
 
-リダイレクトの実装はコード側で完了している。お名前.com / Vercelダッシュボードの操作はユーザー側での作業が必要。
+リダイレクトの実装はコード側で完了している。残っているのはVercelとお名前.comの操作で、
+これはダッシュボードからしか行えない。
 
-1. Vercelプロジェクト（sosolu-site）に `sosolu.tokyo` をカスタムドメインとして追加し、DNSを設定する
-2. 残り18ドメインをVercelプロジェクトに追加する（DNSはVercelを向ける）
-   - リダイレクト自体は `src/middleware.ts` が実装済み。`src/lib/site.ts` の `REDIRECT_HOSTS` に
-     載っているホストで来たリクエストは、パスとクエリを保ったまま `https://sosolu.tokyo` へ301で寄せる。
-   - そのためレジストラ側のURL転送は不要。ドメインをVercelに追加するだけで301が効く。
-   - レジストラのURL転送を使う手もあるが、パスを保てない転送設定が多く、深いURLの被リンクを
-     落とすことがあるためmiddlewareで寄せている。
-3. Search Consoleに `sosolu.tokyo` を登録する
+### 1. sosolu.tokyo を本番ドメインにする
+
+1. Vercelプロジェクト `sosolu-site` の Settings → Domains で `sosolu.tokyo` を追加する
+2. Vercelが表示するDNSレコードを、お名前.comのDNS設定に登録する
+   （通常は apex が A レコード、`www` が CNAME。**表示された値をそのまま使うこと**。
+   ここに固定値を書くとVercel側の変更に追従できないため、あえて書いていない）
+3. Vercelのドメイン一覧で `Valid Configuration` になるまで待つ（DNS反映に時間がかかる）
+
+### 2. 残り18ドメインを追加する
+
+下記をVercelプロジェクトに追加し、それぞれDNSをVercelへ向ける。
+**追加するだけでよい。** Vercel側でリダイレクト設定をする必要はなく、
+`src/middleware.ts` が301で `sosolu.tokyo` へ寄せる。
+
+```
+sosolu.link
+sosolu.blog
+sosolu.online
+sosolu.life
+sosolu.space
+sosolu.email
+sosolu.pro
+sosolu.xyz
+sosolu.shop
+sosolu.help
+sosoru.site
+sosoru.me
+sosoru.link
+sosoru.life
+sosoru.pro
+sosoru.email
+sosoru.tokyo
+sosoru.shop
+```
+
+この一覧は `src/lib/site.ts` の `REDIRECT_HOSTS` と一致している必要がある。
+どちらかだけを変えると、追加したのに寄らないドメインが出る。
+
+**`sosolu.site` はこの一覧に無い。** 上の「重要」の項のとおり別サイトが稼働しているため、
+Vercelにも `REDIRECT_HOSTS` にも入れない。
+
+レジストラ側のURL転送は使わない。パスを保てない転送設定が多く、
+深いURLで来た被リンクを落とすため。
+
+### 3. 設定を検証する
+
+18件を手で追加すると1件くらい漏れる。漏れても、そのドメインで開くと
+普通にサイトが見えてしまい気付きにくいので、設定後に必ず流すこと。
+
+```bash
+npm run check-redirects
+```
+
+全ドメインについて、ルートと深いURL（クエリ付き）が
+`https://sosolu.tokyo` へ301で寄るかを確認し、NGを一覧で出す。
+
+DNSを切り替える前に middleware の挙動だけ先に確かめたい場合は、
+デプロイ先へ直接投げる:
+
+```bash
+npm run check-redirects -- --via https://sosolu-site.vercel.app
+```
+
+### 4. Search Console に登録する
+
+1. `sosolu.tokyo` をプロパティとして登録する
+2. サイトマップに `https://sosolu.tokyo/sitemap.xml` を送信する
+3. 寄せた18ドメインは登録しなくてよい（301先が評価される）
+
+## レビュー機能を有効にする（任意）
+
+ドメイン設定とは独立している。未設定でもサイトは動き、レビュー欄は「準備中」と表示される。
+
+1. Vercel Postgres をプロビジョニングする（`POSTGRES_URL` 等が自動で入る）
+2. `db/schema.sql` を実行してテーブルを作る
+3. 環境変数 `REVIEW_IP_SALT` に任意のランダム文字列を設定する
+   - 投稿元IPをハッシュ化するためのソルト。未設定だと連投チェックが効かない
+   - 後から変えると過去のハッシュと突き合わせられなくなるので、決めたら変えない
