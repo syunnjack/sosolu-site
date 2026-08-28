@@ -34,6 +34,13 @@ const navLinks = [
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    {/*
+      Search Console の所有権確認。確認後も外さないこと。
+      タグを消すと所有権が失効し、プロパティが使えなくなる。
+    */}
+    <meta name="google-site-verification" content="u1fyALe1v-DNGWS4MbMJEG94ifuRl4Oxa5C55LpL_cQ" />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
