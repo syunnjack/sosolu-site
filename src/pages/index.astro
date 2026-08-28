@@ -1,19 +1,28 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { categories, groups } from '../data/categories';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from '../lib/site';
 
 const faqs = [
   {
     q: 'sosolu.tokyo とは何ですか？',
-    a: 'アダルト作品ジャンルごとに存在する複数のランキングサイトを、実際の利用者レビューをもとに比較できるメタ比較ハブです。',
+    a: 'アダルト作品のジャンルごとに存在する複数のランキングサイトを、実際の利用者レビューをもとに比較できるメタ比較ハブです。ランキングそのものを作るのではなく、「どのランキングサイトが自分の探しているジャンルに強いか」を選ぶための場所です。',
   },
   {
     q: 'ランキングは誰が作っていますか？',
-    a: '各ジャンルのランキング自体はジャンル別サイトが作成しています。sosolu.tokyoはそれらのサイトを横断して比較し、実際に使ったユーザーのレビュー・評価を集約します。',
+    a: '各ジャンルのランキング自体は、それぞれのジャンル別サイトが作成しています。sosolu.tokyo はそれらを横断して並べ、実際に使ったユーザーのレビュー・評価を集約します。',
   },
   {
     q: 'レビューは誰でも投稿できますか？',
-    a: 'はい。ニックネームで匿名投稿でき、評価（1〜5）とコメントを投稿できます。',
+    a: 'はい。ニックネームで匿名投稿でき、評価（1〜5）とコメントを投稿できます。投稿の際は各ジャンルページ下部のフォームをご利用ください。掲載の基準はレビュー掲載方針をご覧ください。',
+  },
+  {
+    q: '掲載されている評価は運営者の評価ですか？',
+    a: 'いいえ。ページに表示される平均評価とレビューはすべて利用者による投稿（UGC）です。運営者が点数を付けたり、順位を操作したりはしていません。',
+  },
+  {
+    q: '利用は無料ですか？',
+    a: '無料です。当サイトはアフィリエイトプログラムによる紹介料で運営しており、閲覧者に費用は発生しません。',
   },
 ];
 
@@ -30,68 +39,128 @@ const faqLd = {
 const itemListLd = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
+  name: 'ジャンル別ランキングサイト一覧',
+  numberOfItems: categories.length,
   itemListElement: categories.map((c, i) => ({
     '@type': 'ListItem',
     position: i + 1,
     name: c.name,
-    url: `https://sosolu.tokyo/c/${c.slug}/`,
+    url: absoluteUrl(`/c/${c.slug}/`),
   })),
 };
+
+const siteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  inLanguage: 'ja',
+  isFamilyFriendly: false,
+};
+
+/** グループ見出しの id。日本語をそのまま id にすると扱いづらいので添字を使う。 */
+const groupId = (index: number) => `group-${index}`;
 ---
 <Layout
-  title="sosolu.tokyo — ジャンル別ランキングサイト比較ハブ"
-  description="ジャンルごとのアダルト作品ランキングサイトを、実際のユーザーレビューをもとに比較できるメタ比較サイトです。"
+  title={`${SITE_NAME} — ${categories.length}ジャンルのランキングサイトをレビューで比較`}
+  description={SITE_DESCRIPTION}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
-  <script type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(siteLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(faqLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(itemListLd)} />
 
-  <main>
-    <h1>sosolu.tokyo</h1>
-    <p>
-      ジャンル別に分かれた作品ランキングサイトを、実際に使ったユーザーのレビューをもとに比較できるメタ比較ハブです。
-      どのランキングサイトが自分の探しているジャンルに強いか、レビューを参考に選べます。
-    </p>
+  <h1>ジャンル別ランキングサイトを、レビューで比較する</h1>
+  <p class="lead">
+    ジャンルごとに分かれた作品ランキングサイトを、実際に使ったユーザーのレビューをもとに横断比較できるメタ比較ハブです。
+    現在 {categories.length} ジャンルを{groups.length}つのグループに分けて掲載しています。
+    気になるジャンルを選ぶと、そのジャンルのランキングサイトと利用者の評価を確認できます。
+  </p>
 
-    {groups.map((group) => (
-      <section aria-labelledby={`group-${group}`}>
-        <h2 id={`group-${group}`}>{group}</h2>
+  <p class="notice">
+    表示している評価・レビューはすべて利用者による投稿です。運営者による順位付けや採点は行っていません。
+  </p>
+
+  <nav aria-label="グループ">
+    <ul class="group-nav">
+      {groups.map((group, i) => (
+        <li><a href={`#${groupId(i)}`}>{group}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  {/* 41件を目で探すのは大変なので、その場で絞り込めるようにする。 */}
+  <div class="filter">
+    <label for="category-filter">ジャンルを絞り込む</label>
+    <input
+      type="search"
+      id="category-filter"
+      placeholder="例: 騎乗位、NTR、コスプレ"
+      autocomplete="off"
+    />
+  </div>
+  <p class="filter-empty" id="filter-empty" role="status" hidden>
+    該当するジャンルが見つかりませんでした。
+  </p>
+
+  <div id="category-groups">
+    {groups.map((group, i) => (
+      <section aria-labelledby={groupId(i)} data-group>
+        <h2 id={groupId(i)}>{group}</h2>
         <ul class="category-grid">
           {categories.filter((c) => c.group === group).map((c) => (
-            <li>
+            <li data-category data-name={`${c.name} ${c.slug}`}>
               <a href={`/c/${c.slug}/`}>{c.name}</a>
             </li>
           ))}
         </ul>
       </section>
     ))}
+  </div>
 
-    <section aria-labelledby="faq-heading">
-      <h2 id="faq-heading">よくある質問</h2>
-      {faqs.map((f) => (
-        <details>
-          <summary>{f.q}</summary>
-          <p>{f.a}</p>
-        </details>
-      ))}
-    </section>
-  </main>
+  <section aria-labelledby="faq-heading" class="faq">
+    <h2 id="faq-heading">よくある質問</h2>
+    {faqs.map((f) => (
+      <details>
+        <summary>{f.q}</summary>
+        <p>{f.a}</p>
+      </details>
+    ))}
+  </section>
 </Layout>
 
-<style>
-  .category-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-    gap: 0.5rem;
-    list-style: none;
-    padding: 0;
+<script>
+  // ジャンルの絞り込み。JSが無くても一覧はそのまま読めるので、
+  // 入力欄が見つかったときだけ動かす（プログレッシブ・エンハンスメント）。
+  const input = document.getElementById('category-filter') as HTMLInputElement | null;
+  const emptyEl = document.getElementById('filter-empty');
+  const root = document.getElementById('category-groups');
+
+  if (input && root && emptyEl) {
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-category]'));
+    const sections = Array.from(root.querySelectorAll<HTMLElement>('[data-group]'));
+
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let visible = 0;
+
+      for (const item of items) {
+        const hit = q === '' || (item.dataset.name ?? '').toLowerCase().includes(q);
+        item.hidden = !hit;
+        if (hit) visible++;
+      }
+
+      // 中身が全部消えたグループは見出しごと畳む。
+      for (const section of sections) {
+        const anyVisible = section.querySelector<HTMLElement>('[data-category]:not([hidden])');
+        section.hidden = !anyVisible;
+      }
+
+      emptyEl.hidden = visible > 0;
+    };
+
+    input.addEventListener('input', apply);
+    // 戻るボタンなどで値が残っている場合に備えて初回も走らせる。
+    apply();
   }
-  .category-grid li {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-  }
-  .category-grid a {
-    display: block;
-    padding: 0.5rem 0.75rem;
-    text-decoration: none;
-  }
-</style>
+</script>

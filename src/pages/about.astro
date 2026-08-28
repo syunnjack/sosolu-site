@@ -1,0 +1,79 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { categories, groups } from '../data/categories';
+import { SITE_NAME, SITE_URL, absoluteUrl } from '../lib/site';
+
+const aboutLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: `運営者情報 | ${SITE_NAME}`,
+  url: absoluteUrl('/about/'),
+  inLanguage: 'ja',
+  mainEntity: {
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+};
+---
+<Layout
+  title={`運営者情報・当サイトについて | ${SITE_NAME}`}
+  description={`${SITE_NAME} がどのようなサイトか、掲載しているランキングとレビューをどう扱っているかを説明します。`}
+>
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(aboutLd)} />
+
+  <nav slot="breadcrumb" class="wrap breadcrumb" aria-label="パンくず">
+    <ol>
+      <li><a href="/">{SITE_NAME}</a></li>
+      <li aria-current="page">運営者情報</li>
+    </ol>
+  </nav>
+
+  <h1>運営者情報・当サイトについて</h1>
+  <p class="lead">
+    {SITE_NAME} は、ジャンルごとに分かれたアダルト作品のランキングサイトを横断して比較するための、
+    利用者レビュー主体のメタ比較ハブです。
+  </p>
+
+  <h2>当サイトが行っていること</h2>
+  <p>
+    当サイトはランキングそのものを作成していません。各ジャンルのランキングは、
+    それぞれのジャンル別サイトが独自に作成しているものです。当サイトは
+    {groups.length}グループ・{categories.length}ジャンルにわたるそれらのサイトを一覧化し、
+    実際に利用した方のレビューを集めて「どのランキングサイトが自分の探しているジャンルに合うか」を
+    選びやすくすることを目的としています。
+  </p>
+
+  <h2>レビューの扱い</h2>
+  <p>
+    ジャンルページに表示される平均評価とレビューは、すべて利用者による投稿（UGC）です。
+    運営者が点数を付けたり、特定のサイトを上位に見せるための操作を行ったりはしていません。
+    投稿の受付・掲載の基準は<a href="/guidelines/">レビュー掲載方針</a>に記載しています。
+  </p>
+
+  <h2>収益について</h2>
+  <p>
+    当サイトはアフィリエイトプログラムを利用しており、外部サイトへのリンク経由での利用により
+    紹介料を受け取る場合があります。紹介料の有無によって掲載順やレビューの表示内容を
+    変えることはありません。アフィリエイトリンクには <code>rel="nofollow sponsored"</code> を付与しています。
+  </p>
+
+  <h2>年齢制限</h2>
+  <p>
+    当サイトは成人向けの情報を扱うため、18歳未満の方および所在地域で成人と認められない方の
+    閲覧を禁止しています。初回アクセス時に年齢確認を表示しています。
+  </p>
+
+  <h2>お問い合わせ</h2>
+  <p>
+    掲載内容の誤り、レビューの削除依頼、その他のお問い合わせは、
+    ドメイン登録情報に記載の連絡先までご連絡ください。内容を確認のうえ対応します。
+  </p>
+
+  <h2>免責事項</h2>
+  <p>
+    当サイトは掲載情報の正確性・完全性に努めていますが、これを保証するものではありません。
+    外部サイトの内容・サービス・取引について当サイトは責任を負いません。
+    リンク先の利用規約および年齢制限に従ってご利用ください。
+  </p>
+</Layout>

@@ -72,3 +72,13 @@ export const categories: Category[] = [
 export function getCategory(slug: string): Category | undefined {
   return categories.find((c) => c.slug === slug);
 }
+
+/**
+ * 同じグループの他ジャンルを返す。ジャンルページ同士を相互リンクさせ、
+ * 回遊とクロールの導線を作るために使う。
+ */
+export function getRelatedCategories(slug: string, limit = 8): Category[] {
+  const current = getCategory(slug);
+  if (!current) return [];
+  return categories.filter((c) => c.group === current.group && c.slug !== slug).slice(0, limit);
+}

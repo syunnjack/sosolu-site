@@ -1,11 +1,33 @@
 ---
+import AgeGate from '../components/AgeGate.astro';
+import { SITE_NAME, SITE_URL } from '../lib/site';
+import '../styles/global.css';
+
 export interface Props {
   title: string;
   description: string;
   canonical?: string;
+  /** 検索結果に出したくないページ（404など）で true にする。 */
+  noindex?: boolean;
 }
-const { title, description, canonical } = Astro.props;
-const canonicalURL = canonical ?? new URL(Astro.url.pathname, Astro.site).toString();
+
+const { title, description, canonical, noindex = false } = Astro.props;
+
+// canonical は常に本番ドメイン基準で出す。保有ドメインで開かれても
+// 正規URLが1つに定まるようにするため（middleware の301と合わせて二重の保険）。
+//
+// 末尾スラッシュも揃える。Astroの既定は /about と /about/ の両方を同じルートに
+// 通すので、揃えないと同じページに2種類の canonical が出て評価が割れる。
+const pathname = Astro.url.pathname;
+const normalizedPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+const canonicalURL = canonical ?? new URL(normalizedPath, SITE_URL).toString();
+const currentPath = normalizedPath;
+
+const navLinks = [
+  { href: '/', label: 'ジャンル一覧' },
+  { href: '/about/', label: '運営者情報' },
+  { href: '/guidelines/', label: 'レビュー掲載方針' },
+];
 ---
 <!doctype html>
 <html lang="ja">
@@ -15,12 +37,69 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, Astro.site).toStri
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    {/* 成人向けであることを機械可読で示す。フィルタリングソフト向け。 */}
+    <meta name="rating" content="adult" />
+    <meta name="rating" content="RTA-5042-1996-1400-1577-RTA" />
+
+    <meta name="theme-color" content="#b0134d" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131317" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="ja_JP" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/xml" title="サイトマップ" href="/sitemap.xml" />
   </head>
   <body>
-    <slot />
+    <a class="skip-link" href="#main">本文へスキップ</a>
+
+    <header class="site-header">
+      <div class="wrap">
+        <a class="site-logo" href="/">sosolu<span>.tokyo</span></a>
+        <span class="badge-r18">R18</span>
+        <nav class="site-nav" aria-label="サイト内">
+          {navLinks.map((link) => (
+            <a href={link.href} aria-current={currentPath === link.href ? 'page' : undefined}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <slot name="breadcrumb" />
+
+    <div class="wrap">
+      <main id="main">
+        <slot />
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="フッター">
+          <a href="/">ジャンル一覧</a>
+          <a href="/about/">運営者情報</a>
+          <a href="/guidelines/">レビュー掲載方針</a>
+          <a href="/privacy/">プライバシーポリシー</a>
+        </nav>
+        <p>
+          当サイトは18歳未満の閲覧を禁止しています。掲載されているレビューは利用者による投稿であり、
+          運営者の評価ではありません。また当サイトはアフィリエイトプログラムを利用しています。
+        </p>
+        <p>© {new Date().getFullYear()} {SITE_NAME}</p>
+      </div>
+    </footer>
+
+    <AgeGate />
   </body>
 </html>

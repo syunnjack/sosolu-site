@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
+# レビューAPIはページではないのでクロール対象にしない。
+Disallow: /api/
+
 Sitemap: https://sosolu.tokyo/sitemap.xml
