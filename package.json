@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "check-redirects": "node scripts/check-redirects.mjs"
+    "check-redirects": "node scripts/check-redirects.mjs",
+    "vercel-domains": "node scripts/vercel-domains.mjs"
   },
   "dependencies": {
     "@astrojs/vercel": "^11.0.4",
