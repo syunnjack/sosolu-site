@@ -99,18 +99,25 @@ Vercelにも `REDIRECT_HOSTS` にも入れない。
 18件を手で追加すると1件くらい漏れる。漏れても、そのドメインで開くと
 普通にサイトが見えてしまい気付きにくいので、設定後に必ず流すこと。
 
+手元にリポジトリを clone していなくてよい方法（推奨）:
+
+**Actions → Check redirects → Run workflow**（入力は空欄のまま）
+
+clone してある場合はこちらでもよい:
+
 ```bash
 npm run check-redirects
 ```
 
-全ドメインについて、ルートと深いURL（クエリ付き）が
+どちらも全ドメインについて、ルートと深いURL（クエリ付き）が
 `https://sosolu.tokyo` へ301で寄るかを確認し、NGを一覧で出す。
 
 DNSを切り替える前に middleware の挙動だけ先に確かめたい場合は、
-デプロイ先へ直接投げる:
+デプロイ先へ直接投げる。Actions なら `via` 入力にデプロイ先URLを入れる。
+手元からはこう:
 
 ```bash
-npm run check-redirects -- --via https://sosolu-site.vercel.app
+npm run check-redirects -- --via https://sosolu-site-one.vercel.app
 ```
 
 ### 4. Search Console に登録する

@@ -1,0 +1,33 @@
+# 保有ドメインが sosolu.tokyo へ301で寄っているか確認する。
+#
+# 手元にリポジトリを clone していなくても、Actions の画面から実行できる。
+# ドメイン設定は18件あり1件漏れても画面上は気付けないため、
+# 設定作業のたびにここから流せるようにしておく。
+name: Check redirects
+
+on:
+  workflow_dispatch:
+    inputs:
+      via:
+        description: 'DNS切り替え前に確認する場合のデプロイ先URL（通常は空欄）'
+        type: string
+        default: ''
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check redirects
+        run: |
+          if [ -n "${{ inputs.via }}" ]; then
+            node scripts/check-redirects.mjs --via "${{ inputs.via }}"
+          else
+            node scripts/check-redirects.mjs
+          fi
